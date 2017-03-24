@@ -1,0 +1,48 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: drunken-lizard-database-migrate-
+  labels:
+    app: drunken-lizard-database-migrate
+    tier: backend
+spec:
+  template:
+    metadata:
+      name: drunken-lizard-database-migrate
+      labels:
+        app: drunken-lizard-database-migrate
+        tier: backend
+    spec:
+      containers:
+        - name: drunken-lizard-database
+          image: "gcr.io/drunken-lizards/drunken-lizard-database:${DRUNKEN_LIZARD_DATABASE_TAG}"
+          imagePullPolicy: Always
+          env:
+            - name: DATABASE_IP
+              value: "${DATABASE_IP}"
+            - name: DATABASE_NAME
+              value: "${DATABASE_NAME}"
+            - name: DATABASE_PASSWORD
+              value: "${DATABASE_PASSWORD}"
+            - name: DATABASE_PORT
+              value: "${DATABASE_PORT}"
+            - name: DATABASE_USERNAME
+              value: "${DATABASE_USERNAME}"
+          # arg variable replacement is done by configuration script, not
+          #   evaluation at runtime
+          args:
+            - "-user=${DATABASE_USERNAME}"
+            - "-password=${DATABASE_PASSWORD}"
+            - "-url=jdbc:postgresql://${DATABASE_IP}:${DATABASE_PORT}/${DATABASE_NAME}"
+            - "flyway.placeholders.admin_email=${DRUNKEN_LIZARD_ADMIN_EMAIL}"
+            - "flyway.placeholders.admin_password_algorithm=${DRUNKEN_LIZARD_ADMIN_PASSWORD_ALGORITHM}"
+            - "flyway.placeholders.admin_password_hash=${DRUNKEN_LIZARD_ADMIN_PASSWORD_HASH}"
+            - "flyway.placeholders.admin_password_salt=${DRUNKEN_LIZARD_ADMIN_SALT}"
+            - "flyway.placeholders.admin_user=${DRUNKEN_LIZARD_ADMIN_USER}"
+            - "-locations=filesystem:./sql"
+            - "migrate"
+      nodeSelector:
+        role: frontend
+      restartPolicy: OnFailure
+
